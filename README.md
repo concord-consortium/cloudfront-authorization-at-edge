@@ -72,10 +72,14 @@ NOTE: Run the deployment commands below in a Unix-like shell such as sh, bash, z
 2. Install dependencies: `npm install`
 3. TypeScript compile and run Webpack: `npm run build`
 4. Run SAM build. Use a container to support binaries: `sam build --use-container`
-5. Run SAM package: `sam package --output-template-file packaged.yaml --s3-bucket <Your SAM bucket> --region us-east-1`
+4. There is an issue with the version of babel that breaks sam so this hack is necessary: `find .aws-sam/build/ReactAppHandler/node_modules/ -mtime +16000 -print -exec touch {} \;`
+  babel has fixed this issue a few days ago: https://github.com/babel/babel/issues/12125
+5. Run SAM package: `sam package --output-template-file packaged.yaml --s3-bucket <Your SAM bucket> --s3-prefix <SAM bucket prefix> --region us-east-1`
 6. Run SAM deploy: `sam deploy --template-file packaged.yaml --stack-name <Your Stack Name> --capabilities CAPABILITY_IAM --parameter-overrides EmailAddress=<your email> --region us-east-1`
 
 Providing an email address (as above in step 6) is optional. If you provide it, a user will be created in the Cognito User Pool that you can sign-in with.
+
+You can also optionally provide a UserPoolGroupName.
 
 ### Option 3: Deploy by including the Serverless Application in your own CloudFormation template
 
@@ -88,7 +92,7 @@ You may want to see how your existing application works with the authentication 
 - It's also fine to let your SPA have its own page name, but you'll need to remember to test with its actual URL, e.g. if you drop your SPA entry page into the bucket as `myapp.html` your test URL will look like `https://SOMECLOUDFRONTURLSTRING.cloudfront.net/myapp.html`
 - Make sure none of your SPA filenames collide with the REACT app.  Alternately just remove the REACT app first -- but sometimes it's nice to keep it in place to validate that authentication is generally working.
 
-You may find that your application does not render properly -- the default Content Security Policy (CSP) in the CloudFormation parameter may be the issue.  As a quick test you can either remove the `"Content-Security-Policy":"..."` parameter from the CloudFormation's HttpHeaders parameter, or substitute your own. Leave the other headers in the parameter alone unless you have a good reason. 
+You may find that your application does not render properly -- the default Content Security Policy (CSP) in the CloudFormation parameter may be the issue.  As a quick test you can either remove the `"Content-Security-Policy":"..."` parameter from the CloudFormation's HttpHeaders parameter, or substitute your own. Leave the other headers in the parameter alone unless you have a good reason.
 
 ## I already have a CloudFront distribution, I just want to add auth
 
